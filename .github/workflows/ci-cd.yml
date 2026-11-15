@@ -1,0 +1,63 @@
+name: CI/CD (mock)
+
+# Triggered by pushes to develop (and manually from the Actions tab).
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+jobs:
+  # ===========================================================
+  # CI (Continuous Integration): build + check the code
+  # ===========================================================
+  ci:
+    name: CI - validate & build
+    runs-on: ubuntu-latest
+    steps:
+      # CI: get source code
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # CI: check required files exist (stand-in for lint/test)
+      - name: Check required files
+        run: |
+          test -f index.html
+          test -f about.html
+          echo "Required files present"
+
+      # CI: build step (static site, so just package files)
+      - name: Build (mock)
+        run: |
+          mkdir -p dist
+          cp *.html dist/
+          ls -la dist
+
+      # CI: store build output so CD job can reuse it
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: site-dist
+          path: dist
+
+  # ===========================================================
+  # CD (Continuous Deployment): ship the CI output
+  # ===========================================================
+  cd:
+    name: CD - deploy (simulated)
+    needs: ci # CD runs only if CI passes
+    runs-on: ubuntu-latest
+    steps:
+      # CD: fetch the artifact built by CI
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: site-dist
+          path: dist
+
+      # CD: fake deploy - no real server involved
+      - name: Deploy to server (simulation only)
+        run: |
+          echo "Simulating deploy of branch '${GITHUB_REF_NAME}' @ ${GITHUB_SHA::7}"
+          echo "Files to upload:"
+          ls -la dist
+          echo "Fake upload to server... done. (nothing was actually deployed)"
